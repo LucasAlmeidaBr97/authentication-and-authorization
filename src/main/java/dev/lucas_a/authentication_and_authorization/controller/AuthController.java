@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import dev.lucas_a.authentication_and_authorization.config.TokenConfig;
 import dev.lucas_a.authentication_and_authorization.dto.request.LoginRequest;
 import dev.lucas_a.authentication_and_authorization.dto.request.RegisterUserRequest;
 import dev.lucas_a.authentication_and_authorization.dto.response.LoginResponse;
@@ -26,11 +27,13 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final TokenConfig tokenConfig;
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenConfig tokenConfig) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
+        this.tokenConfig = tokenConfig;
     }  
 
     @PostMapping("/login")
@@ -38,13 +41,12 @@ public class AuthController {
         UsernamePasswordAuthenticationToken userAndPass = new UsernamePasswordAuthenticationToken(request.email(), request.password());
         Authentication authentication = authenticationManager.authenticate(userAndPass);
 
-
-
-
-        return null;   
+        User user = (User) authentication.getPrincipal();
+        String token = tokenConfig.generateToken(user);
+        return ResponseEntity.ok(new LoginResponse(token));   
     }
 
-
+    @PostMapping("/register")
     public ResponseEntity<RegisterUserResponse> register(@Valid @RequestBody RegisterUserRequest request) {
         User newUser = new User();
         newUser.setPassword(passwordEncoder.encode(request.password()));
